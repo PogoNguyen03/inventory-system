@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hệ thống Giám sát Kho Real-time</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        background: #f0f2f5;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        margin: auto;
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      #stock-display {
+        font-size: 80px;
+        text-align: center;
+        color: #2ecc71;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .log {
+        font-size: 14px;
+        color: #666;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+      }
+      .blink {
+        animation: blinker 1s linear infinite;
+        color: red !important;
+      }
+      @keyframes blinker {
+        50% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>📦 KHO IPHONE 15 PRO</h1>
+      <div class="subtitle" style="text-align: center">Cửa hàng Quận 1</div>
+
+      <div id="stock-display">--</div>
+
+      <div id="status-log" class="log">Đang chờ tín hiệu từ Server...</div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+      const socket = io("http://localhost:3000");
+      const display = document.getElementById("stock-display");
+      const statusLog = document.getElementById("status-log");
+
+      // 1. Hàm lấy dữ liệu ban đầu (Initial Fetch)
+      async function fetchInitialData() {
+        try {
+          // Gọi API lấy tồn kho
+          const res = await fetch(
+            "http://localhost:3000/api/inventory?store_id=1",
+          );
+          const json = await res.json();
+
+          // Tìm đúng sản phẩm iPhone 15 Pro (ID=1)
+          const product = json.data.find((p) => p.product_id === 1);
+
+          if (product) {
+            display.innerText = product.quantity;
+          }
+        } catch (err) {
+          console.error("Lỗi lấy dữ liệu:", err);
+        }
+      }
+
+      // 2. Khi kết nối thành công -> Gọi hàm lấy dữ liệu ngay
+      socket.on("connect", () => {
+        statusLog.innerText = "🟢 Đã kết nối tới Server!";
+        fetchInitialData(); // <--- THÊM DÒNG NÀY
+      });
+
+      // 3. Lắng nghe sự kiện thay đổi (Giữ nguyên)
+      socket.on("STOCK_UPDATE", (data) => {
+        console.log("Nhận dữ liệu:", data);
+
+        if (data.product_id == 1 && data.store_id == 1) {
+          display.innerText = data.new_quantity;
+          statusLog.innerText = `⚡ ${new Date().toLocaleTimeString()}: ${data.message}`;
+
+          // Hiệu ứng cảnh báo
+          if (data.new_quantity < 5) {
+            display.classList.add("blink");
+            display.style.color = "red";
+          } else {
+            display.classList.remove("blink");
+            display.style.color = "#2ecc71";
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

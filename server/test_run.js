@@ -2,7 +2,7 @@
 // Cần cài đặt axios: npm install axios
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://inventory-api-edr5.onrender.com/api';
 const STORE_ID = 1;      // Cửa hàng Quận 1
 const PRODUCT_ID = 2;    // iPhone 15 Pro
 
